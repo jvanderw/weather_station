@@ -1,4 +1,4 @@
-# Copyright (c) 2020 Jess VanDerwalker
+# Copyright (c) 2020-2026 Jess VanDerwalker
 
 import time
 import displayio
@@ -16,15 +16,15 @@ FONT_12_PT = cwd + "/fonts/Arial-12.bdf"
 class WeatherGraphics(displayio.Group):
 
     def __init__(self, display):
-        super().__init__(max_size=3)
+        super().__init__()
         self.display = display
 
         # Set up the different text groups
-        self.root_group = displayio.Group(max_size=15)
+        self.root_group = displayio.Group()
         self.root_group.append(self)
-        self.text_group = displayio.Group(max_size=5)
+        self.text_group = displayio.Group()
         self.append(self.text_group)
-        self.description_group = displayio.Group(max_size=5)
+        self.description_group = displayio.Group()
         self.append(self.description_group)
 
         self.font_12_pt = bitmap_font.load_font(FONT_12_PT)
@@ -33,7 +33,7 @@ class WeatherGraphics(displayio.Group):
         self.font_12_pt.load_glyphs("°")
 
         # Set the font and position of the tempature text
-        self.temp_text = Label(self.font_12_pt, max_glyphs=6)
+        self.temp_text = Label(self.font_12_pt)
         self.temp_text.x = 2
         self.temp_text.y = 7
         self.temp_text.color = TEMP_COLOR
@@ -41,25 +41,32 @@ class WeatherGraphics(displayio.Group):
         self.text_group.append(self.temp_text)
 
         # Place the description group
-        self.description_text = Label(self.font_12_pt, max_glyphs=20)
+        self.description_text = Label(self.font_12_pt)
         self.description_text.color = MAIN_COLOR
         self.description_text.text = "--"
         self.description_group.x = 2
         self.description_group.y = 23
         self.description_group.append(self.description_text)
 
-        self.display.show(self.root_group);
+        self.display.root_group = self.root_group
 
     def display_weather(self, weather_json):
-        """Display the weather based on data in passed in NOAA JSON blob"""
-        temp = weather_json["properties"]["temperature"]["value"]
-        # Convert to fahrenheit
-        temp = (temp * (9/5)) + 32
-        self.temp_text.text = "%s  °F" % round(temp)
+        """Display weather based on flat JSON payload from weather_server"""
+        temp = weather_json.get("temperature")
+        if isinstance(temp, (int, float)):
+            # Convert to fahrenheit
+            temp = (temp * (9/5)) + 32
+            self.temp_text.text = "%s  °F" % round(temp)
+        else:
+            self.temp_text.text = "-- °F"
 
-        self.description_text.text = weather_json["properties"]["textDescription"]
+        description = weather_json.get("textDescription")
+        if isinstance(description, str) and description:
+            self.description_text.text = description
+        else:
+            self.description_text.text = "No description"
 
-        self.display.show(self.root_group)
+        self.display.root_group = self.root_group
         #self.scroll_description()
 
     def scroll_description(self):

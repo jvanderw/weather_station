@@ -1,2 +1,15 @@
 *~
 secrets.py
+*.mpy
+.venv/
+venv/
+env/
+weather_station_env/
+pycache/
+*.pyc
+.pytest_cache/
+.mypy_cache/
+.coverage
+dist/
+build/
+lib/
