@@ -1,15 +1,8 @@
-# Copyright (c) 2020 Jess VanDerwalker
+# Copyright (c) 2020-2024 Jess VanDerwalker
 #
 
 import time
 import board
-import busio
-from digitalio import DigitalInOut
-import adafruit_esp32spi.adafruit_esp32spi_socket as socket
-import adafruit_requests as requests
-from adafruit_esp32spi import adafruit_esp32spi
-from adafruit_esp32spi import adafruit_esp32spi_wifimanager
-import neopixel
 from adafruit_matrixportal.network import Network
 from adafruit_matrixportal.matrix import Matrix
 import weather_graphics
