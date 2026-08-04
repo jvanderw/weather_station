@@ -11,7 +11,7 @@ SCROLL_DISPLAY = 0.03
 
 # Current working directory
 cwd = ("/" + __file__).rsplit("/", 1)[0]
-FONT_12_PT = cwd + "/fonts/Arial-12.bdf"
+FONT_12_PT = cwd + "/fonts/MatrixLight8x6.bdf"
 
 class WeatherGraphics(displayio.Group):
 
@@ -28,7 +28,7 @@ class WeatherGraphics(displayio.Group):
         self.append(self.description_group)
 
         self.font_12_pt = bitmap_font.load_font(FONT_12_PT)
-        glyphs = b"0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-,.: "
+        glyphs = b"0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-.,:/'%() "
         self.font_12_pt.load_glyphs(glyphs)
         self.font_12_pt.load_glyphs("°")
 

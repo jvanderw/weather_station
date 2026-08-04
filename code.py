@@ -20,6 +20,15 @@ def _fatal_error(where, error):
     print("[fatal]", where, error)
     traceback.print_exception(type(error), error, error.__traceback__)
 
+
+def _fetch_json(network_client, url, timeout=10):
+    response = network_client.fetch(url, timeout=timeout)
+    try:
+        network_client.check_response(response)
+        return response.json()
+    finally:
+        response.close()
+
 try:
     from secrets import secrets
 except ImportError:
@@ -30,6 +39,12 @@ REQUIRED_SECRETS = ("station_id", "server_host", "server_port")
 for required_key in REQUIRED_SECRETS:
     if required_key not in secrets:
         raise KeyError("Missing required secrets key: %s" % required_key)
+
+location = secrets.get("location")
+if not isinstance(location, (tuple, list)) or len(location) != 2:
+    raise KeyError("Missing or invalid secrets key: location (latitude, longitude)")
+location_lat = location[0]
+location_lon = location[1]
 
 HAS_AIO_CREDENTIALS = bool(secrets.get("aio_username")) and bool(secrets.get("aio_key"))
 if not HAS_AIO_CREDENTIALS:
@@ -43,6 +58,12 @@ WEATHER_CURRENT = "http://%s:%s/%s" % (
 WEATHER_HEALTH = "http://%s:%s/health" % (
     secrets["server_host"],
     secrets["server_port"]
+)
+WEATHER_FORECAST = "http://%s:%s/forecast/%s,%s" % (
+    secrets["server_host"],
+    secrets["server_port"],
+    location_lat,
+    location_lon
 )
 WEATHER_DATA = []
 SCROLL_PAUSE = 2
@@ -67,6 +88,7 @@ weather_failures = 0
 server_health_checked = False
 
 print("Weather API endpoint:", WEATHER_CURRENT)
+print("Forecast API endpoint:", WEATHER_FORECAST)
 
 # Main update loop
 while True:
@@ -92,7 +114,27 @@ while True:
                     server_health_checked = True
 
                 print("Retrieving data")
-                response = network.fetch_data(WEATHER_CURRENT, json_path=(WEATHER_DATA, ))
+                response = _fetch_json(network, WEATHER_CURRENT)
+                forecast_response = _fetch_json(network, WEATHER_FORECAST)
+
+                periods = forecast_response.get("periods") if isinstance(forecast_response, dict) else None
+                detailed_forecasts = []
+                if isinstance(periods, list):
+                    for period in periods[:3]:
+                        if not isinstance(period, dict):
+                            continue
+                        detailed_forecast = period.get("detailedForecast") or period.get("detailedForcast")
+                        if isinstance(detailed_forecast, str) and detailed_forecast:
+                            detailed_forecasts.append(detailed_forecast)
+
+                if detailed_forecasts:
+                    summary_text = " ".join(detailed_forecasts)
+                    existing_description = response.get("textDescription")
+                    if isinstance(existing_description, str) and existing_description:
+                        response["textDescription"] = "%s %s" % (existing_description, summary_text)
+                    else:
+                        response["textDescription"] = summary_text
+
                 weather_gfx.display_weather(response)
                 weather_refresh = time.monotonic()
                 weather_failures = 0
