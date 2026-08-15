@@ -13,3 +13,4 @@ pycache/
 dist/
 build/
 lib/
+.vscode/
