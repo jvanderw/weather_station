@@ -14,3 +14,5 @@ dist/
 build/
 lib/
 .vscode/
+AGENTS.md
+adafruit-circuitpython-matrixportal_m4-en_US-9.2.1.uf2

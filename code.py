@@ -24,11 +24,12 @@ def _fatal_error(where, error):
 
 
 
-def _fetch_json(network_client: Network, url: str, timeout=10) -> dict:
+def _fetch_json(network_client, url, timeout=10):
     response = None
     try:
-        response = network_client.fetch(url, timeout=timeout)
-        network_client.check_response(response)
+        response = network_client.get(url, timeout=timeout)
+        if not 200 <= response.status_code < 300:
+            raise RuntimeError("weather_server returned HTTP %s" % response.status_code)
         return response.json()
     except RuntimeError as exc:
         global _network_utils
@@ -59,12 +60,13 @@ def _fetch_json(network_client: Network, url: str, timeout=10) -> dict:
 
 
 def _sleep_with_scroll(weather_display, delay_seconds):
-    remaining = delay_seconds
-    while remaining > 0:
-        weather_display.scroll_description()
-        interval = 1 if remaining > 1 else remaining
-        time.sleep(interval)
-        remaining = remaining - interval
+    start_time = time.monotonic()
+    while (time.monotonic() - start_time) < delay_seconds:
+        weather_display.scroll_single_description()
+        if not getattr(weather_display, "forecasts", None):
+            time.sleep(1)
+        else:
+            time.sleep(SCROLL_PAUSE)
 
 _log_info("Starting Weather Station")
 
@@ -119,14 +121,28 @@ except Exception as e:
     raise
 _log_stage("Matrix initialized")
 
-from adafruit_matrixportal.network import Network
+gc.collect()
 import weather_graphics
-
-_log_stage("Initializing Network and Matrix")
-network: Network = Network(status_neopixel=board.NEOPIXEL, debug=True)
-_log_stage("Network initialized")
 weather_gfx = weather_graphics.WeatherGraphics(matrix.display)
 _log_stage("Weather graphics initialized")
+
+_log_stage("Initializing Network and Matrix")
+import busio
+import digitalio
+import neopixel
+from adafruit_esp32spi import adafruit_esp32spi
+from adafruit_esp32spi.adafruit_esp32spi_wifimanager import ESPSPI_WiFiManager
+
+spi = busio.SPI(board.SCK, board.MOSI, board.MISO)
+esp = adafruit_esp32spi.ESP_SPIcontrol(
+    spi,
+    digitalio.DigitalInOut(board.ESP_CS),
+    digitalio.DigitalInOut(board.ESP_BUSY),
+    digitalio.DigitalInOut(board.ESP_RESET),
+)
+status_pixel = neopixel.NeoPixel(board.NEOPIXEL, 1, brightness=0.2)
+network = ESPSPI_WiFiManager(esp, secrets, status_pixel=status_pixel, debug=True)
+_log_stage("Network initialized")
 
 localtime_refresh = None
 weather_refresh = None

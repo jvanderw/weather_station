@@ -25,7 +25,7 @@ secrets = {
     "password": "YOUR_WIFI_PASSWORD",
     "station_id": "KPDX",
     "server_host": "192.168.1.50",
-    "server_port": 3030
+    "server_port": 4950
 }
 
 Notes:
@@ -60,7 +60,7 @@ Fields used by display logic:
 
 1. Start weather_server first on LAN host.
 2. Confirm health endpoint works:
-   - http://<server_host>:3030/health
+   - http://<server_host>:4950/health
 3. Boot Matrix Portal with updated secrets.py.
 4. Watch serial logs for:
    - Wi-Fi connection

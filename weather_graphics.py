@@ -7,7 +7,7 @@ from adafruit_bitmap_font import bitmap_font
 
 TEMP_COLOR = 0xF3F7b7
 MAIN_COLOR = 0x9000FF
-SCROLL_SPEED = 0.03
+SCROLL_SPEED = 0.01
 
 # Current working directory
 cwd = ("/" + __file__).rsplit("/", 1)[0]
@@ -88,8 +88,16 @@ class WeatherGraphics(displayio.Group):
 
     def scroll_single_description(self, ):
         """Scroll the description as it may be longer than the display width"""
+        # Nothing to scroll yet, e.g. before the first successful weather fetch
+        if not self.forecasts:
+            return
+
         self.forecast_group.x = self.display.width
         self.forecast_group.y = 23
+
+        # Clamp in case forecasts shrank since forecast_number was last advanced
+        if self.forecast_number >= len(self.forecasts):
+            self.forecast_number = 0
 
         self.name_text.text = "%s: " % self.forecasts[self.forecast_number].get("name")
         self.name_text.x = 0
